@@ -20,6 +20,10 @@ import lombok.ToString;
 @ToString
 public class Book {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
     @ManyToOne
     @JoinColumn(name = "client_id", nullable = false)
     private Client client;
