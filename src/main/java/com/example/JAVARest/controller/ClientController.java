@@ -8,6 +8,8 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import com.example.JAVARest.DTO.BookDTO;
+import com.example.JAVARest.DTO.ClientDTO;
 import com.example.JAVARest.model.Book;
 import com.example.JAVARest.model.Client;
 import com.example.JAVARest.repo.ClientRepo;
@@ -83,25 +85,52 @@ public class ClientController {
             }
             Client client = clientData.get();
 
-            List<Book> fetchedBooks = bookService.fetchBooks(title);
+            List<BookDTO> fetchedBooks = bookService.fetchBooks(title);
 
             List<Book> clientBooks = client.getBooks();
             if (clientBooks == null) {
                 clientBooks = new ArrayList<>();
             }
-            for (Book book : fetchedBooks) {
-                book.setClient(client);
+
+            if (fetchedBooks != null) {
+                for (BookDTO bookDTO : fetchedBooks) {
+                    if (bookDTO != null) {
+
+                        Book book = new Book();
+                        book.setTitle(bookDTO.getTitle());
+                        book.setAuthor(bookDTO.getAuthor());
+                        book.setIsValidISBN(bookDTO.getIsbn());
+
+                        clientBooks.add(book);
+                    }
+                }
             }
-            clientBooks.addAll(fetchedBooks);
 
             client.setBooks(clientBooks);
             clientRepo.save(client);
 
-            return Response.ok(client).build();
+            ClientDTO clientDTO = new ClientDTO();
+            clientDTO.setId(client.getId());
+            clientDTO.setName(client.getName());
+            clientDTO.setBooks(convertBooksToDTOs(client.getBooks()));
+
+            return Response.ok(clientDTO).build();
         } catch (Exception e) {
             e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    private List<BookDTO> convertBooksToDTOs(List<Book> books) {
+        List<BookDTO> bookDTOs = new ArrayList<>();
+        for (Book book : books) {
+            BookDTO dto = new BookDTO();
+            dto.setTitle(book.getTitle());
+            dto.setAuthor(book.getAuthor());
+            dto.setIsbn(book.getIsValidISBN());
+            bookDTOs.add(dto);
+        }
+        return bookDTOs;
     }
 
     @PUT

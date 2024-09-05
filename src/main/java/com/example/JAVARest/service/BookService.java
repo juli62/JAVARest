@@ -1,18 +1,16 @@
 package com.example.JAVARest.service;
 
-import org.apache.tomcat.util.digester.DocumentProperties.Charset;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.example.JAVARest.DTO.BookDTO;
 import com.example.JAVARest.model.Book;
-import java.io.UnsupportedEncodingException;
+import com.example.JAVARest.repo.ClientRepo;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
@@ -20,8 +18,6 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
@@ -37,9 +33,12 @@ public class BookService {
     private static final String SOAP_URL = "http://webservices.daehosting.com/services/isbnservice.wso";
     private static final String SOAP_ACTION = "http://webservices.daehosting.com/ISBN/IsValidISBN13";
 
+    @Autowired
+    ClientRepo clientRepo;
+
     @Transactional
-    public List<Book> fetchBooks(String query) {
-        List<Book> books = new ArrayList<>();
+    public List<BookDTO> fetchBooks(String query) {
+        List<BookDTO> bookDTOs = new ArrayList<>();
 
         Client client = ClientBuilder.newClient();
         WebTarget target = client.target(API_URL + query.replace(" ", "+"));
@@ -59,12 +58,12 @@ public class BookService {
                 JSONArray isbnArray = bookJson.optJSONArray("isbn");
                 String isbn = (isbnArray != null && isbnArray.length() > 0) ? isbnArray.optString(0) : null;
 
-                if (isbn != null && isbn.length() >= 13) {
-                    isbn = isbn.substring(0, 13); // Get first 13 digits of ISBN
-                }
-
                 if (title != null) {
-                    books.add(new Book(title, author, isbn));
+                    BookDTO bookDTO = new BookDTO();
+                    bookDTO.setTitle(title);
+                    bookDTO.setAuthor(author);
+                    bookDTO.setIsbn(isbn);
+                    bookDTOs.add(bookDTO);
                 }
             }
         } else {
@@ -72,7 +71,7 @@ public class BookService {
         }
 
         response.close();
-        return books;
+        return bookDTOs;
     }
 
     private boolean isValidISBN(String isbn) {
