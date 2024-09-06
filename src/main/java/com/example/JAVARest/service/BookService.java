@@ -83,7 +83,7 @@ public class BookService {
         return jsonArray.length() > 0 ? jsonArray.getString(0) : null;
     }
 
-    private boolean isValidISBN(String isbn) {
+    public boolean isValidISBN(String isbn) {
         String formattedISBN = formatISBN(isbn);
 
         String soapRequest = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +

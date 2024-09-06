@@ -11,14 +11,12 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import com.example.JAVARest.dtos.BookDTO;
-import com.example.JAVARest.model.Book;
 import com.example.JAVARest.model.Client;
 import com.example.JAVARest.repo.ClientRepo;
 import com.example.JAVARest.service.BookService;
 import com.example.JAVARest.service.ClientService;
 
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 @Path("/clients")
 public class ClientController {
