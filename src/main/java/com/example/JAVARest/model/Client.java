@@ -39,7 +39,8 @@ public class Client {
         if (books == null) {
             books = new ArrayList<String>();
         }
-        this.books.add(book.getTitle() + "-" + book.getAuthor() + "  Is valid ISBN:" + book.getIsbn().toString());
+        this.books.add(book.getTitle() + "-" + book.getAuthor() + "  ISBN:" + book.getIsbn().toString()
+                + " Is ValidISBN:" + String.valueOf(book.getValid()));
     }
 
 }

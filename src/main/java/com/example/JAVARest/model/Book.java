@@ -18,6 +18,7 @@ public class Book {
         this.title = title;
         this.author = author;
         this.isbn = isbn;
+        this.isValid = isValid;
     }
 
     // Getters and Setters
@@ -43,5 +44,13 @@ public class Book {
 
     public void setIsbn(String isbn) {
         this.isbn = isbn;
+    }
+
+    public void setValid(Boolean isValid) {
+        this.isValid = isValid;
+    }
+
+    public boolean getValid() {
+        return isValid;
     }
 }
