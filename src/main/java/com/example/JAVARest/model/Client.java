@@ -3,15 +3,10 @@ package com.example.JAVARest.model;
 import java.util.List;
 
 import java.util.ArrayList;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -34,15 +29,17 @@ public class Client {
 
     private String name;
 
-    @ElementCollection
-    private List<Book> books = new ArrayList<>();
+    private List<String> books = new ArrayList<String>();
 
-    public List<Book> getBooks() {
+    public List<String> getBooks() {
         return books;
     }
 
     public void addBook(Book book) {
-        this.books.add(book);
+        if (books == null) {
+            books = new ArrayList<String>();
+        }
+        this.books.add(book.getTitle() + "-" + book.getAuthor() + "  Is valid ISBN:" + book.getIsbn().toString());
     }
 
 }

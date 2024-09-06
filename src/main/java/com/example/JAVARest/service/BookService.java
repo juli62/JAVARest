@@ -1,17 +1,17 @@
 package com.example.JAVARest.service;
 
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.example.JAVARest.DTO.BookDTO;
-import com.example.JAVARest.model.Book;
+import com.example.JAVARest.dtos.BookDTO;
 import com.example.JAVARest.repo.ClientRepo;
 
 import java.util.ArrayList;
 import java.util.List;
-import jakarta.transaction.Transactional;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
@@ -36,50 +36,61 @@ public class BookService {
     @Autowired
     ClientRepo clientRepo;
 
-    @Transactional
-    public List<BookDTO> fetchBooks(String query) {
-        List<BookDTO> bookDTOs = new ArrayList<>();
+    public BookDTO fetchBook(String query) {
+        BookDTO bookDTO = null;
 
-        Client client = ClientBuilder.newClient();
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.register(JacksonJaxbJsonProvider.class);
+
+        Client client = ClientBuilder.newClient(clientConfig);
         WebTarget target = client.target(API_URL + query.replace(" ", "+"));
         Response response = target.request(MediaType.APPLICATION_JSON).get();
 
         if (response.getStatus() == 200) {
+
             String jsonResponse = response.readEntity(String.class);
+
             JSONObject jsonObject = new JSONObject(jsonResponse);
             JSONArray docs = jsonObject.getJSONArray("docs");
 
-            for (int i = 0; i < docs.length(); i++) {
-                JSONObject bookJson = docs.getJSONObject(i);
-                String title = bookJson.optString("title");
-                String author = bookJson.optJSONArray("author_name") != null
-                        ? bookJson.optJSONArray("author_name").optString(0)
-                        : null;
-                JSONArray isbnArray = bookJson.optJSONArray("isbn");
-                String isbn = (isbnArray != null && isbnArray.length() > 0) ? isbnArray.optString(0) : null;
+            if (docs.length() > 0) {
+                JSONObject bookJson = docs.getJSONObject(0);
+                bookDTO = new BookDTO();
 
-                if (title != null) {
-                    BookDTO bookDTO = new BookDTO();
-                    bookDTO.setTitle(title);
-                    bookDTO.setAuthor(author);
+                bookDTO.setTitle(bookJson.optString("title"));
+                bookDTO.setAuthor_name(bookJson.optJSONArray("author_name") != null
+                        ? jsonToString(bookJson.getJSONArray("author_name"))
+                        : null);
+
+                JSONArray isbnArray = bookJson.optJSONArray("isbn");
+                if (isbnArray != null) {
+                    String isbn = findValidIsbn(isbnArray);
                     bookDTO.setIsbn(isbn);
-                    bookDTOs.add(bookDTO);
+                    bookDTO.setIsValid(isbn != null && isbn.length() == 13);
                 }
+                bookDTO.setIsValid(isValidISBN(bookJson.getJSONArray("isbn").toString()));
             }
         } else {
-            System.out.println("Error fetching books: HTTP " + response.getStatus());
+            System.out.println("Error fetching book: HTTP " + response.getStatus());
         }
 
         response.close();
-        return bookDTOs;
+
+        return bookDTO;
+    }
+
+    private String jsonToString(JSONArray jsonArray) {
+        return jsonArray.length() > 0 ? jsonArray.getString(0) : null;
     }
 
     private boolean isValidISBN(String isbn) {
+        String formattedISBN = formatISBN(isbn);
+
         String soapRequest = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
                 "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n" +
                 "  <soap:Body>\n" +
                 "    <IsValidISBN13 xmlns=\"http://webservices.daehosting.com/ISBN\">\n" +
-                "      <sISBN>" + isbn + "</sISBN>\n" +
+                "      <sISBN>" + formattedISBN + "</sISBN>\n" +
                 "    </IsValidISBN13>\n" +
                 "  </soap:Body>\n" +
                 "</soap:Envelope>";
@@ -101,7 +112,6 @@ public class BookService {
                 Document document = builder.parse(new InputSource(new StringReader(responseString)));
                 document.getDocumentElement().normalize();
 
-                // Manually find the result element
                 NodeList resultNodes = document.getElementsByTagName("IsValidISBN13Result");
                 if (resultNodes.getLength() > 0) {
                     Element resultElement = (Element) resultNodes.item(0);
@@ -117,4 +127,24 @@ public class BookService {
         response.close();
         return isValid;
     }
+
+    private String findValidIsbn(JSONArray isbnArray) {
+        for (int i = 0; i < isbnArray.length(); i++) {
+            String isbn = isbnArray.optString(i);
+            if (isbn != null && isbn.length() == 13) {
+                return isbn;
+            }
+        }
+        return null;
+    }
+
+    public static String formatISBN(String isbn) {
+
+        return isbn.substring(0, 3) + "-" +
+                isbn.substring(3, 4) + "-" +
+                isbn.substring(4, 8) + "-" +
+                isbn.substring(8, 12) + "-" +
+                isbn.substring(12);
+    }
+
 }

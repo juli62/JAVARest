@@ -1,4 +1,4 @@
-package com.example.JAVARest.DTO;
+package com.example.JAVARest.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,10 +7,12 @@ import lombok.Setter;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Setter
 @Getter
+@Setter
 public class BookDTO {
+
     private String title;
-    private String author;
+    private String author_name;
     private String isbn;
+    private Boolean isValid;
 }

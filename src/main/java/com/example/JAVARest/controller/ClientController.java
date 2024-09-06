@@ -4,16 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import com.example.JAVARest.DTO.BookDTO;
-import com.example.JAVARest.DTO.ClientDTO;
+import com.example.JAVARest.dtos.BookDTO;
 import com.example.JAVARest.model.Book;
 import com.example.JAVARest.model.Client;
 import com.example.JAVARest.repo.ClientRepo;
 import com.example.JAVARest.service.BookService;
+import com.example.JAVARest.service.ClientService;
 
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -26,6 +28,9 @@ public class ClientController {
 
     @Inject
     private BookService bookService;
+
+    @Autowired
+    private ClientService clientService;
 
     @GET
     @Path("/getAllClients")
@@ -78,59 +83,12 @@ public class ClientController {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response addBooksToClient(@PathParam("id") Long id, @QueryParam("title") String title) {
-        try {
-            Optional<Client> clientData = clientRepo.findById(id);
-            if (!clientData.isPresent()) {
-                return Response.status(Response.Status.NOT_FOUND).build();
-            }
-            Client client = clientData.get();
 
-            List<BookDTO> fetchedBooks = bookService.fetchBooks(title);
+        BookDTO book = bookService.fetchBook(title);
 
-            List<Book> clientBooks = client.getBooks();
-            if (clientBooks == null) {
-                clientBooks = new ArrayList<>();
-            }
+        clientService.addBookToClient(id, book);
 
-            if (fetchedBooks != null) {
-                for (BookDTO bookDTO : fetchedBooks) {
-                    if (bookDTO != null) {
-
-                        Book book = new Book();
-                        book.setTitle(bookDTO.getTitle());
-                        book.setAuthor(bookDTO.getAuthor());
-                        book.setIsValidISBN(bookDTO.getIsbn());
-
-                        clientBooks.add(book);
-                    }
-                }
-            }
-
-            client.setBooks(clientBooks);
-            clientRepo.save(client);
-
-            ClientDTO clientDTO = new ClientDTO();
-            clientDTO.setId(client.getId());
-            clientDTO.setName(client.getName());
-            clientDTO.setBooks(convertBooksToDTOs(client.getBooks()));
-
-            return Response.ok(clientDTO).build();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    private List<BookDTO> convertBooksToDTOs(List<Book> books) {
-        List<BookDTO> bookDTOs = new ArrayList<>();
-        for (Book book : books) {
-            BookDTO dto = new BookDTO();
-            dto.setTitle(book.getTitle());
-            dto.setAuthor(book.getAuthor());
-            dto.setIsbn(book.getIsValidISBN());
-            bookDTOs.add(dto);
-        }
-        return bookDTOs;
+        return Response.ok(book).build();
     }
 
     @PUT
@@ -144,7 +102,6 @@ public class ClientController {
             if (clientData.isPresent()) {
                 Client updatedClient = clientData.get();
                 updatedClient.setName(newClientData.getName());
-                updatedClient.setBooks(newClientData.getBooks());
 
                 Client clientObj = clientRepo.save(updatedClient);
                 return Response.ok(clientObj).build();
